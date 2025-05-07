@@ -1,10 +1,11 @@
 module Exports
   class ExportDonationsCSVService
-    def initialize(donation_ids:)
+    def initialize(donation_ids:, organization:)
       # Use a where lookup so that I can eager load all the resources
       # needed rather than depending on external code to do it for me.
       # This makes this code more self contained and efficient!
-      @donations = Donation.includes(
+      @organization = organization
+      @donations = organization.donations.includes(
         :storage_location,
         :donation_site,
         :product_drive,
@@ -13,6 +14,7 @@ module Exports
       ).where(
         id: donation_ids,
       ).order(created_at: :asc)
+      @item_headers = @organization.items.select("DISTINCT ON (LOWER(name)) items.name").order("LOWER(name) ASC").map(&:name)
     end
 
     def generate_csv
@@ -93,19 +95,7 @@ module Exports
       base_table.keys
     end
 
-    def item_headers
-      return @item_headers if @item_headers
-
-      item_names = Set.new
-
-      donations.each do |donation|
-        donation.line_items.each do |line_item|
-          item_names.add(line_item.item.name)
-        end
-      end
-
-      @item_headers = item_names.sort
-    end
+    attr_reader :item_headers
 
     def build_row_data(donation)
       row = base_table.values.map { |closure| closure.call(donation) }
