@@ -135,6 +135,8 @@ module Exports
     def item_headers
       return @item_headers if @item_headers
 
+      # There is a bug here where if there are two items with the same name, but different case, we'll only get one of them.
+      # In the real world, it's unlikely this happens, since the product data sets just aren't that big/messy.
       @item_headers = @organization.items.select("DISTINCT ON (LOWER(name)) items.name").order("LOWER(name) ASC").map(&:name)
     end
 
