@@ -110,17 +110,17 @@ RSpec.describe Exports::ExportDistributionsCSVService do
       let(:case_sensitive_csv_data) do
         # Create items in random order to ensure sort is working
         item_names.shuffle.each do |name|
-          create(:item, name: name, organization: organization) 
+          create(:item, name: name, organization: organization)
         end
-        
+
         described_class.new(distributions: [distribution], organization: organization, filters: filters).generate_csv_data
       end
 
       it 'should sort item columns case-insensitively, ASC' do
         # Get just the item columns by removing the known base headers
         item_columns = case_sensitive_csv_data[0] - non_item_headers
-        item_columns = item_columns - ["Total Items", "Total Value"]
-        
+        item_columns -= ["Total Items", "Total Value"]
+
         # Check that the remaining columns match our expected case-insensitive sort
         expect(item_columns).to eq(expected_order)
       end
@@ -178,7 +178,7 @@ RSpec.describe Exports::ExportDistributionsCSVService do
 
       it 'should include the unused item as a column with 0 quantities' do
         expect(generated_csv_data[0]).to include(unused_item.name)
-        
+
         distributions.each_with_index do |_, idx|
           row = generated_csv_data[idx + 1]
           item_column_index = generated_csv_data[0].index(unused_item.name)
@@ -186,26 +186,25 @@ RSpec.describe Exports::ExportDistributionsCSVService do
         end
       end
 
-    context 'when an organization\'s item is inactive' do
-      let(:inactive_item) { create(:item, name: "Inactive Item", organization: organization, active: false) }
-      let(:generated_csv_data) do
-        # Force inactive_item to be created first
-        inactive_item
-        described_class.new(distributions: distributions, organization: organization, filters: filters).generate_csv_data
-      end
+      context 'when an organization\'s item is inactive' do
+        let(:inactive_item) { create(:item, name: "Inactive Item", organization: organization, active: false) }
+        let(:generated_csv_data) do
+          # Force inactive_item to be created first
+          inactive_item
+          described_class.new(distributions: distributions, organization: organization, filters: filters).generate_csv_data
+        end
 
-      it 'should include the inactive item as a column with 0 quantities' do
-        expect(generated_csv_data[0]).to include(inactive_item.name)
-        
-        distributions.each_with_index do |_, idx|
-          row = generated_csv_data[idx + 1]
-          item_column_index = generated_csv_data[0].index(inactive_item.name)
-          expect(row[item_column_index]).to eq(0)
+        it 'should include the inactive item as a column with 0 quantities' do
+          expect(generated_csv_data[0]).to include(inactive_item.name)
+
+          distributions.each_with_index do |_, idx|
+            row = generated_csv_data[idx + 1]
+            item_column_index = generated_csv_data[0].index(inactive_item.name)
+            expect(row[item_column_index]).to eq(0)
+          end
         end
       end
     end
-    end
-    
 
     context 'when there are no distributions but the report is requested' do
       let(:generated_csv_data) { described_class.new(distributions: [], organization: organization, filters: filters).generate_csv_data }
@@ -227,7 +226,7 @@ RSpec.describe Exports::ExportDistributionsCSVService do
     end
 
     context 'with \'by_item_id\' filters applied' do
-      let(:filters) { { by_item_id: duplicate_item.id } }
+      let(:filters) { {by_item_id: duplicate_item.id} }
       let(:mock_totals) do
         totals = double('totals')
         allow(totals).to receive(:[]).and_return(double('distribution_total', quantity: 0, value: 0))
@@ -258,7 +257,7 @@ RSpec.describe Exports::ExportDistributionsCSVService do
     end
 
     context 'with \'by_item_category_id\' filters applied' do
-      let(:filters) { { by_item_category_id: duplicate_item.item_category.id } }
+      let(:filters) { {by_item_category_id: duplicate_item.item_category.id} }
       let(:mock_totals) do
         totals = double('totals')
         allow(totals).to receive(:[]).and_return(double('distribution_total', quantity: 0, value: 0))
@@ -286,7 +285,6 @@ RSpec.describe Exports::ExportDistributionsCSVService do
         csv_data = described_class.new(distributions: distributions, organization: organization, filters: filters).generate_csv_data
         expect(csv_data[0]).to include("Total Value of #{duplicate_item.item_category.name}")
       end
-
     end
 
     context 'with custom date formatting' do
@@ -300,7 +298,7 @@ RSpec.describe Exports::ExportDistributionsCSVService do
 
       it 'formats issued_at date as MM/DD/YYYY' do
         distribution_row = generated_csv_data[1]
-        issued_at_col = distribution_row[2] 
+        issued_at_col = distribution_row[2]
         expect(issued_at_col).to match(/\d{2}\/\d{2}\/\d{4}/)
       end
     end
