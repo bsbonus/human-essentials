@@ -44,7 +44,7 @@ module Exports
     def item_headers
       return @item_headers if @item_headers
 
-      @item_headers = organization.items.order(:name).pluck(:name)
+      @item_headers = organization.items.select("DISTINCT ON (LOWER(name)) items.name").order("LOWER(name) ASC").map(&:name)
     end
   end
 end
