@@ -241,6 +241,54 @@ RSpec.describe StorageLocation, type: :model do
         expect(storage_location.longitude).not_to eq(nil)
       end
     end
+
+    describe "to_csv" do
+      let(:organization) { create(:organization) }
+      let(:storage_location) { create(:storage_location, organization: organization) }
+      let(:item1) { create(:item, name: "Item 1", organization: organization) }
+      let(:item2) { create(:item, name: "Item 2", organization: organization) }
+      let(:item3) { create(:item, name: "Item 3", organization: organization) }
+
+      before do
+        # Create items in the organization
+        [item1, item2, item3]
+      end
+
+      it "generates a CSV with the correct headers and data", :focus => true do
+        csv_data = storage_location.to_csv
+        parsed_csv = CSV.parse(csv_data, headers: true)
+
+        debugger
+        # Check headers
+        expect(parsed_csv.headers).to eq(["Quantity", "DO NOT CHANGE ANYTHING IN THIS COLUMN"])
+
+        # Check data rows
+        expect(parsed_csv.count).to eq(3) # One row per item
+        expect(parsed_csv.map { |row| row["DO NOT CHANGE ANYTHING IN THIS COLUMN"] }).to match_array([item1.name, item2.name, item3.name])
+        expect(parsed_csv.map { |row| row["Quantity"] }).to all(eq(""))
+      end
+
+      it "includes all organization items in the CSV" do
+        csv_data = storage_location.to_csv
+        parsed_csv = CSV.parse(csv_data, headers: true)
+        
+        # Get all item names from the CSV
+        csv_item_names = parsed_csv.map { |row| row["DO NOT CHANGE ANYTHING IN THIS COLUMN"] }
+        
+        # Check that all organization items are included
+        expect(csv_item_names).to match_array(organization.items.pluck(:name))
+      end
+
+      it "generates a valid CSV string" do
+        csv_data = storage_location.to_csv
+        
+        # Verify it's a valid CSV string
+        expect { CSV.parse(csv_data) }.not_to raise_error
+        
+        # Verify it has the correct number of lines (header + items)
+        expect(csv_data.lines.count).to eq(organization.items.count + 1)
+      end
+    end
   end
 
   describe "versioning" do
