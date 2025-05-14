@@ -1,11 +1,11 @@
-require 'csv' # other export specs already have it, but this one is special
+require "csv" # other export specs already have it, but this one is special
 
 RSpec.describe Exports::ExportProductDrivesCSVService do
   include ItemsHelper
 
   describe "#generate_csv_data" do
     let(:organization) { create(:organization) }
-    let(:date_range) { Date.today.all_month }
+    let(:date_range) { Time.zone.today.all_month }
     subject { described_class.new(product_drives, organization, date_range).generate_csv }
     let(:duplicate_item) do
       FactoryBot.create(
@@ -48,7 +48,7 @@ RSpec.describe Exports::ExportProductDrivesCSVService do
         )
 
         items.each do |(item, quantity)|
-          donation = create(
+          create(
             :donation,
             :with_items,
             item: item,
@@ -113,7 +113,7 @@ RSpec.describe Exports::ExportProductDrivesCSVService do
       end
     end
 
-    context 'when an organization\'s item exists but isn\'t in any product drive' do
+    context "when an organization's item exists but isn't in any product drive" do
       let(:unused_item) { create(:item, name: "Unused Item", organization: organization) }
       let(:generated_csv_data) do
         # Force unused_item to be created first
@@ -121,9 +121,9 @@ RSpec.describe Exports::ExportProductDrivesCSVService do
         CSV.parse(described_class.new(product_drives, organization, date_range).generate_csv)
       end
 
-      it 'should include the unused item as a column with 0 quantities' do
+      it "should include the unused item as a column with 0 quantities" do
         expect(generated_csv_data[0]).to include(unused_item.name)
-        
+
         product_drives.each_with_index do |_, idx|
           row = generated_csv_data[idx + 1]
           item_column_index = generated_csv_data[0].index(unused_item.name)
@@ -132,7 +132,7 @@ RSpec.describe Exports::ExportProductDrivesCSVService do
       end
     end
 
-    context 'when an organization\'s item is inactive' do
+    context "when an organization's item is inactive" do
       let(:inactive_item) { create(:item, name: "Inactive Item", active: false, organization: organization) }
       let(:generated_csv_data) do
         # Force inactive_item to be created first
@@ -140,9 +140,9 @@ RSpec.describe Exports::ExportProductDrivesCSVService do
         CSV.parse(described_class.new(product_drives, organization, date_range).generate_csv)
       end
 
-      it 'should include the inactive item as a column with 0 quantities' do
+      it "should include the inactive item as a column with 0 quantities" do
         expect(generated_csv_data[0]).to include(inactive_item.name)
-        
+
         product_drives.each_with_index do |_, idx|
           row = generated_csv_data[idx + 1]
           item_column_index = generated_csv_data[0].index(inactive_item.name)
@@ -151,45 +151,45 @@ RSpec.describe Exports::ExportProductDrivesCSVService do
       end
     end
 
-    context 'when generating CSV output' do
+    context "when generating CSV output" do
       let(:generated_csv) { described_class.new(product_drives, organization, date_range).generate_csv }
 
-      it 'returns a valid CSV string' do
+      it "returns a valid CSV string" do
         expect(generated_csv).to be_a(String)
         expect { CSV.parse(generated_csv) }.not_to raise_error
       end
 
-      it 'includes headers as first row' do
+      it "includes headers as first row" do
         csv_rows = CSV.parse(generated_csv)
         expect(csv_rows.first).to eq(expected_headers)
       end
 
-      it 'includes data for all product drives' do
+      it "includes data for all product drives" do
         csv_rows = CSV.parse(generated_csv)
         expect(csv_rows.count).to eq(product_drives.count + 1) # +1 for headers
       end
     end
 
-    context 'when items have different cases' do
+    context "when items have different cases" do
       let(:item_names) { ["Zebra", "apple", "Banana"] }
       let(:expected_order) { ["apple", "Banana", "Zebra"] }
       let(:product_drive) { create(:product_drive, organization: organization) }
       let(:case_sensitive_csv_data) do
         # Create items in random order to ensure sort is working
         item_names.shuffle.each do |name|
-          create(:item, name: name, organization: organization) 
+          create(:item, name: name, organization: organization)
         end
-        
+
         CSV.parse(described_class.new([product_drive], organization, date_range).generate_csv)
       end
 
-      it 'should sort item columns case-insensitively, ASC' do
+      it "should sort item columns case-insensitively, ASC" do
         # Get just the item columns by removing the known base headers
         item_columns = case_sensitive_csv_data[0].drop(7)  # Drop the first 7 base headers
-        
+
         # Check that the remaining columns match our expected case-insensitive sort
         expect(item_columns).to eq(expected_order)
       end
     end
   end
-end 
+end

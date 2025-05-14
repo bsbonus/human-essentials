@@ -117,7 +117,7 @@ RSpec.describe Exports::ExportPurchasesCSVService do
       end
     end
 
-    context 'when an organization\'s item exists but isn\'t in any purchase' do
+    context "when an organization's item exists but isn't in any purchase" do
       let(:unused_item) { create(:item, name: "Unused Item", organization: organization) }
       let(:generated_csv_data) do
         # Force unused_item to be created first
@@ -125,9 +125,9 @@ RSpec.describe Exports::ExportPurchasesCSVService do
         described_class.new(purchase_ids: purchases.map(&:id), organization: organization).generate_csv_data
       end
 
-      it 'should include the unused item as a column with 0 quantities' do
+      it "should include the unused item as a column with 0 quantities" do
         expect(generated_csv_data[0]).to include(unused_item.name)
-        
+
         purchases.each_with_index do |_, idx|
           row = generated_csv_data[idx + 1]
           item_column_index = generated_csv_data[0].index(unused_item.name)
@@ -136,7 +136,7 @@ RSpec.describe Exports::ExportPurchasesCSVService do
       end
     end
 
-    context 'when an organization\'s item is inactive' do
+    context "when an organization's item is inactive" do
       let(:inactive_item) { create(:item, name: "Inactive Item", active: false, organization: organization) }
       let(:generated_csv_data) do
         # Force inactive_item to be created first
@@ -144,9 +144,9 @@ RSpec.describe Exports::ExportPurchasesCSVService do
         described_class.new(purchase_ids: purchases.map(&:id), organization: organization).generate_csv_data
       end
 
-      it 'should include the inactive item as a column with 0 quantities' do
+      it "should include the inactive item as a column with 0 quantities" do
         expect(generated_csv_data[0]).to include(inactive_item.name)
-        
+
         purchases.each_with_index do |_, idx|
           row = generated_csv_data[idx + 1]
           item_column_index = generated_csv_data[0].index(inactive_item.name)
@@ -155,42 +155,42 @@ RSpec.describe Exports::ExportPurchasesCSVService do
       end
     end
 
-    context 'when generating CSV output' do
+    context "when generating CSV output" do
       let(:generated_csv) { described_class.new(purchase_ids: purchase_ids, organization: organization).generate_csv }
 
-      it 'returns a valid CSV string' do
+      it "returns a valid CSV string" do
         expect(generated_csv).to be_a(String)
         expect { CSV.parse(generated_csv) }.not_to raise_error
       end
 
-      it 'includes headers as first row' do
+      it "includes headers as first row" do
         csv_rows = CSV.parse(generated_csv)
         expect(csv_rows.first).to eq(expected_headers)
       end
 
-      it 'includes data for all purchases' do
+      it "includes data for all purchases" do
         csv_rows = CSV.parse(generated_csv)
         expect(csv_rows.count).to eq(purchases.count + 1) # +1 for headers
       end
     end
 
-    context 'when items have different cases' do
+    context "when items have different cases" do
       let(:item_names) { ["Zebra", "apple", "Banana"] }
       let(:expected_order) { ["apple", "Banana", "Zebra"] }
       let(:purchase) { create(:purchase, organization: organization) }
       let(:case_sensitive_csv_data) do
         # Create items in random order to ensure sort is working
         item_names.shuffle.each do |name|
-          create(:item, name: name, organization: organization) 
+          create(:item, name: name, organization: organization)
         end
-        
+
         described_class.new(purchase_ids: [purchase.id], organization: organization).generate_csv_data
       end
 
-      it 'should sort item columns case-insensitively, ASC' do
+      it "should sort item columns case-insensitively, ASC" do
         # Get just the item columns by removing the known base headers
         item_columns = case_sensitive_csv_data[0] - expected_headers[0..-4] # plucks out the 3 items at the end
-        
+
         # Check that the remaining columns match our expected case-insensitive sort
         expect(item_columns).to eq(expected_order)
       end
